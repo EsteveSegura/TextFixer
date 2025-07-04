@@ -18,9 +18,9 @@ print(f"Loading model and tokenizer from: {highest_checkpoint_dir}")
 tokenizer = AutoTokenizer.from_pretrained(highest_checkpoint_dir, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(highest_checkpoint_dir, trust_remote_code=True)
 
-# Example prompt for inference
 def main():
-    prompt = "This is an example of"
+    # Example prompt in the required format
+    prompt = "<text_obfuscated>h3ll0</text_obfuscated><text>"
     print(f"Prompt: {prompt}")
 
     # Tokenize the input prompt
