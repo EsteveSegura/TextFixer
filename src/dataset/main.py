@@ -14,6 +14,7 @@ import json
 from datasets import load_dataset
 from typing import List, Dict, Any
 import logging
+import random
 
 # Configure logging
 logging.basicConfig(
@@ -65,10 +66,20 @@ class FineWebDatasetDownloader:
                 if i >= self.num_samples:
                     break
                     
+                # Cut the text to between 15 and 35 words randomly
+                original_text = sample.get("text", "")
+                text = sample.get("text", "")
+                words = text.split()
+                if len(words) > 15:
+                    max_words = min(35, len(words))
+                    num_words = random.randint(15, max_words)
+                    text = " ".join(words[:num_words])
+                
                 # Extract the text content and metadata
                 processed_sample = {
                     "id": i,
-                    "text": sample.get("text", ""),
+                    "original_text": original_text,
+                    "text": text,
                     "language": sample.get("language", "en"),
                     "language_score": sample.get("language_score", 0.0),
                     "token_count": sample.get("token_count", 0)

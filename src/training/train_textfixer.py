@@ -9,13 +9,8 @@ on the obfuscated text dataset.
 import os
 import json
 from datasets import Dataset
-from transformers import (
-    AutoTokenizer, 
-    AutoModelForCausalLM,
-    TrainingArguments,
-    Trainer,
-    DataCollatorForLanguageModeling
-)
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from trl import SFTConfig, SFTTrainer
 import torch
 from typing import Dict, Any
 import logging
@@ -101,52 +96,6 @@ class TextFixerTrainer:
         
         logger.info("Model and tokenizer loaded successfully")
     
-    def tokenize_function(self, examples: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Tokenize the dataset.
-        
-        Args:
-            examples: Dataset examples
-            
-        Returns:
-            Tokenized examples
-        """
-        # Tokenize the texts
-        tokenized = self.tokenizer(
-            examples["text"],
-            truncation=True,
-            padding=True,
-            max_length=2048,  # Adjust based on your needs
-            return_tensors="pt"
-        )
-        
-        # Set labels to input_ids for causal language modeling
-        tokenized["labels"] = tokenized["input_ids"].clone()
-        
-        return tokenized
-    
-    def prepare_dataset(self, dataset: Dataset) -> Dataset:
-        """
-        Prepare the dataset for training.
-        
-        Args:
-            dataset: Raw dataset
-            
-        Returns:
-            Prepared dataset
-        """
-        logger.info("Preparing dataset for training...")
-        
-        # Tokenize the dataset
-        tokenized_dataset = dataset.map(
-            self.tokenize_function,
-            batched=True,
-            remove_columns=dataset.column_names
-        )
-        
-        logger.info("Dataset prepared successfully")
-        return tokenized_dataset
-    
     def train(self, 
               num_epochs: int = 3,
               batch_size: int = 4,
@@ -155,74 +104,50 @@ class TextFixerTrainer:
               save_steps: int = 500,
               logging_steps: int = 50):
         """
-        Train the model.
-        
-        Args:
-            num_epochs: Number of training epochs
-            batch_size: Training batch size
-            learning_rate: Learning rate
-            warmup_steps: Number of warmup steps
-            save_steps: Save model every N steps
-            logging_steps: Log every N steps
+        Entrena el modelo usando SFTTrainer de TRL.
         """
-        logger.info("Starting training...")
-        
-        # Load dataset
+        logger.info("Iniciando entrenamiento con SFTTrainer...")
+
+        # Cargar dataset
         dataset = self.load_dataset()
-        
-        # Load model and tokenizer
+
+        # Cargar modelo y tokenizer
         self.load_model_and_tokenizer()
-        
-        # Prepare dataset
-        tokenized_dataset = self.prepare_dataset(dataset)
-        
-        # Data collator
-        data_collator = DataCollatorForLanguageModeling(
-            tokenizer=self.tokenizer,
-            mlm=False  # We're doing causal language modeling, not masked
-        )
-        
-        # Training arguments
-        training_args = TrainingArguments(
+
+        # Configuración de entrenamiento SFT
+        sft_config = SFTConfig(
             output_dir=self.output_dir,
             num_train_epochs=num_epochs,
             per_device_train_batch_size=batch_size,
-            gradient_accumulation_steps=4,  # Effective batch size = batch_size * 4
             learning_rate=learning_rate,
             warmup_steps=warmup_steps,
             save_steps=save_steps,
             logging_steps=logging_steps,
-            save_total_limit=3,  # Keep only the last 3 checkpoints
-            prediction_loss_only=True,
-            remove_unused_columns=False,
-            dataloader_pin_memory=False,
-            fp16=torch.cuda.is_available(),  # Use mixed precision if available
-            report_to=None,  # Disable wandb/tensorboard logging
-            load_best_model_at_end=True,
-            metric_for_best_model="eval_loss",
-            greater_is_better=False,
-            evaluation_strategy="steps",
+            save_total_limit=3,
+            max_seq_length=2048,
+            fp16=torch.cuda.is_available(),
+            report_to=None,
             eval_steps=save_steps,
+            evaluation_strategy="steps",
         )
-        
-        # Initialize trainer
-        trainer = Trainer(
+
+        # Inicializar SFTTrainer
+        trainer = SFTTrainer(
             model=self.model,
-            args=training_args,
-            train_dataset=tokenized_dataset,
-            data_collator=data_collator,
+            train_dataset=dataset,
+            args=sft_config,
             tokenizer=self.tokenizer,
         )
-        
-        # Start training
-        logger.info("Training started...")
+
+        # Entrenar
+        logger.info("Entrenamiento iniciado...")
         trainer.train()
-        
-        # Save the final model
+
+        # Guardar modelo final
         trainer.save_model()
         self.tokenizer.save_pretrained(self.output_dir)
-        
-        logger.info(f"Training completed! Model saved to: {self.output_dir}")
+
+        logger.info(f"Entrenamiento completado! Modelo guardado en: {self.output_dir}")
 
 
 def main():
