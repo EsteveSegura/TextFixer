@@ -37,6 +37,7 @@ def main():
     def formatting_func(example):
         return example["text"]
 
+    # SFTConfig for training arguments
     training_args = SFTConfig(
         output_dir=output_dir,
         per_device_train_batch_size=4,
@@ -52,12 +53,12 @@ def main():
         # eos_token="<|im_end|>",  # Uncomment if your model requires it
     )
 
+    # SFTTrainer does not take 'tokenizer' as argument in latest TRL
     trainer = SFTTrainer(
         model=model,
         args=training_args,
         train_dataset=dataset,
         formatting_func=formatting_func,
-        tokenizer=tokenizer,
     )
 
     logger.info("Training started...")
