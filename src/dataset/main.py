@@ -28,12 +28,12 @@ class FineWebDatasetDownloader:
     Downloads and processes the FineWeb dataset for TextFixer training.
     """
     
-    def __init__(self, num_samples: int = 1500, output_dir: str = "data"):
+    def __init__(self, num_samples: int = 6000, output_dir: str = "data"):
         """
         Initialize the dataset downloader.
         
         Args:
-            num_samples: Number of samples to download (default: 1500)
+            num_samples: Number of samples to download (default: 6000)
             output_dir: Directory to save the processed dataset
         """
         self.num_samples = num_samples
@@ -151,7 +151,7 @@ def main():
     logger.info("Starting TextFixer dataset download...")
     
     # Initialize the downloader
-    downloader = FineWebDatasetDownloader(num_samples=1500)
+    downloader = FineWebDatasetDownloader(num_samples=6000)
     
     # Download the dataset
     downloader.download_dataset()
