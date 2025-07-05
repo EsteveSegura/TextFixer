@@ -31,20 +31,14 @@ model = AutoModelForSeq2SeqLM.from_pretrained("google/byt5-small")
 
 # 3. Tokenization function
 def preprocess(example):
+    # Tokenize input and target in one call using text_target (new API)
     model_inputs = tokenizer(
         example["input"],
+        text_target=example["target"],
         truncation=True,
         padding="max_length",
         max_length=128,
     )
-    with tokenizer.as_target_tokenizer():
-        labels = tokenizer(
-            example["target"],
-            truncation=True,
-            padding="max_length",
-            max_length=128,
-        )
-    model_inputs["labels"] = labels["input_ids"]
     return model_inputs
 
 print("Tokenizing dataset...")
@@ -61,8 +55,11 @@ training_args = TrainingArguments(
     save_steps=500,
     save_total_limit=2,
     num_train_epochs=5,
-    fp16=True,  # Use float16 if your GPU supports it
-    report_to="none",  # Remove if you use wandb or tensorboard
+    learning_rate=2e-4,
+    warmup_steps=500,
+    fp16=False,
+    max_grad_norm=1.0,
+    report_to="none",
 )
 
 # 5. Inference callback for periodic inference during training
