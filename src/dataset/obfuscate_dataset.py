@@ -366,7 +366,8 @@ def obfuscate_text(text):
     for orig_word, conv_word in zip(words, converted_words):
         if orig_word != conv_word:
             pattern = r'\b' + re.escape(orig_word) + r'\b'
-            result = re.sub(pattern, conv_word, result)
+            # Use a lambda function to safely replace with special characters
+            result = re.sub(pattern, lambda m: conv_word, result)
     
     return result
 
