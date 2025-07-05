@@ -64,9 +64,9 @@ training_args = TrainingArguments(
 
 # 5. Inference callback for periodic inference during training
 class InferenceCallback(TrainerCallback):
-    def __init__(self, tokenizer, example_input, steps=500):
+    def __init__(self, tokenizer, validation_data, steps=500):
         self.tokenizer = tokenizer
-        self.example_input = example_input
+        self.validation_data = validation_data
         self.steps = steps
 
     def on_step_end(self, args, state, control, **kwargs):
@@ -74,22 +74,24 @@ class InferenceCallback(TrainerCallback):
             model = kwargs["model"]
             model.eval()
             device = next(model.parameters()).device
-            inputs = self.tokenizer(self.example_input, return_tensors="pt")
+            
+            # Select a random example from validation data
+            if self.validation_data:
+                random_example = random.choice(self.validation_data)
+                example_input = random_example["input"]
+            else:
+                example_input = "Deobfuscate: H3ll0 w0rld"
+            
+            inputs = self.tokenizer(example_input, return_tensors="pt")
             inputs = {k: v.to(device) for k, v in inputs.items()}
             with torch.no_grad():
                 generated_ids = model.generate(**inputs, max_new_tokens=128)
             output = self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
-            print(f"\n[Step {state.global_step}] Inference for: {self.example_input}")
+            print(f"\n[Step {state.global_step}] Inference for: {example_input}")
             print(f"Output: {output}\n")
             model.train()
 
-# Choose a sample input from the validation set for inference
-if len(val_data) > 0:
-    example_input = val_data[0]["input"]
-else:
-    example_input = "Deobfuscate: H3ll0 w0rld"
-
-inference_callback = InferenceCallback(tokenizer, example_input, steps=500)
+inference_callback = InferenceCallback(tokenizer, val_data, steps=500)
 
 # 6. Trainer
 trainer = Trainer(
