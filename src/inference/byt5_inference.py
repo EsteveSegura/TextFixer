@@ -20,12 +20,13 @@ tokenizer = AutoTokenizer.from_pretrained(highest_checkpoint_dir)
 model = AutoModelForSeq2SeqLM.from_pretrained(highest_checkpoint_dir)
 
 def main():
-    # Example obfuscated input for inference
+    # Example instructive obfuscated input for inference
     obfuscated_input = "H3ll0 w0rld"
-    print(f"Obfuscated input: {obfuscated_input}")
+    instructive_input = f"Deobfuscate: {obfuscated_input}"
+    print(f"Instructive input: {instructive_input}")
 
     # Tokenize the input
-    inputs = tokenizer(obfuscated_input, return_tensors="pt")
+    inputs = tokenizer(instructive_input, return_tensors="pt")
 
     # Generate output (move to GPU if available)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
