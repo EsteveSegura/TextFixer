@@ -53,7 +53,6 @@ training_args = TrainingArguments(
     output_dir="./byt5-finetuned",
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
-    evaluation_strategy="steps",
     eval_steps=500,
     logging_steps=100,
     save_steps=1000,
